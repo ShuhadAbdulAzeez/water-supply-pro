@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use App\Models\Truck;
+use App\Exports\DailyInventoryExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class InventoryController extends Controller
@@ -16,7 +19,19 @@ class InventoryController extends Controller
 
     public function create()
     {
-        $trucks = Truck::getActiveTrucks();
+        $trucks = Truck::where('status', 'active')
+                    ->orderBy('plate_number')
+                    ->get();
+        
+        // Check if trucks are being retrieved
+        if ($trucks->isEmpty()) {
+            // Log that no active trucks were found
+            \Log::info('No active trucks found in database');
+        } else {
+            // Log how many trucks were found
+            \Log::info('Found ' . $trucks->count() . ' active trucks');
+        }
+                    
         return view('inventory.create', compact('trucks'));
     }
 
@@ -82,22 +97,28 @@ class InventoryController extends Controller
 
     public function dailyReport()
     {
-        $today = now()->toDateString();
-        $inventories = Inventory::with('truck')
-            ->whereDate('inventory_date', $today)
-            ->get();
+        try {
+            $today = Carbon::today();
+            
+            // Get all records for today with debugging
+            $records = Inventory::whereDate('created_at', $today)
+                              ->orWhereDate('inventory_date', $today)
+                              ->with('truck')
+                              ->get();
+            
+            if ($records->isEmpty()) {
+                \Log::info('No inventory records found for: ' . $today->format('Y-m-d'));
+                return redirect()->back()
+                    ->with('error', 'No inventory records found for ' . $today->format('Y-m-d'));
+            }
 
-        $summary = [
-            'total_filled' => $inventories->sum('filled_bottles_count'),
-            'total_empty' => $inventories->sum('empty_bottles_count'),
-            'total_damaged' => $inventories->sum('damaged_bottles_count'),
-            'total_bottles' => $inventories->sum(function ($inventory) {
-                return $inventory->filled_bottles_count + 
-                       $inventory->empty_bottles_count + 
-                       $inventory->damaged_bottles_count;
-            })
-        ];
-
-        return view('inventory.daily-report', compact('inventories', 'summary', 'today'));
+            $fileName = 'inventory-daily-report-' . $today->format('Y-m-d') . '.xlsx';
+            return Excel::download(new DailyInventoryExport, $fileName);
+            
+        } catch (\Exception $e) {
+            \Log::error('Excel export failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to generate report: ' . $e->getMessage());
+        }
     }
 }

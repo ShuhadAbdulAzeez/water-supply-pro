@@ -9,13 +9,25 @@
                 <a href="{{ route('inventory.create') }}" class="btn btn-primary me-2">
                     <i class="fas fa-plus"></i> Add Inventory Record
                 </a>
-                <a href="{{ route('inventory.daily-report') }}" class="btn btn-info">
+                <a href="{{ route('inventory.daily-report') }}" class="btn btn-info me-2">
                     <i class="fas fa-chart-bar"></i> Daily Report
                 </a>
+                <!-- Add debug information -->
+                <span class="text-muted">
+                    Today's Date: {{ \Carbon\Carbon::today()->format('Y-m-d') }}
+                    ({{ \App\Models\Inventory::whereDate('created_at', \Carbon\Carbon::today())->count() }} records)
+                </span>
             </div>
         </div>
     </div>
 </div>
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
 
 <div class="row">
     <div class="col-md-12">
@@ -64,4 +76,4 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection

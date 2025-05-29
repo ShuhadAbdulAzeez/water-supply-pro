@@ -66,4 +66,4 @@ class TruckController extends Controller
         return redirect()->route('trucks.index')
             ->with('success', 'Truck deleted successfully.');
     }
-} 
+}

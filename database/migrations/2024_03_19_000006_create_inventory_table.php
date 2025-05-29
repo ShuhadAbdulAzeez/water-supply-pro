@@ -6,22 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
-        Schema::create('inventory', function (Blueprint $table) {
+        Schema::create('inventories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('truck_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('truck_id')->constrained()->onDelete('cascade');
             $table->integer('filled_bottles_count')->default(0);
             $table->integer('empty_bottles_count')->default(0);
             $table->integer('damaged_bottles_count')->default(0);
-            $table->date('inventory_date');
+            $table->date('inventory_date'); // Added the missing column
             $table->text('notes')->nullable();
             $table->timestamps();
+            
+            // Index for better query performance
+            $table->index(['truck_id', 'inventory_date']);
+            $table->index('inventory_date');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('inventory');
+        Schema::dropIfExists('inventories');
     }
-}; 
+};

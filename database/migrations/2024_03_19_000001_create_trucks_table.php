@@ -6,14 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+   public function up()
     {
         Schema::create('trucks', function (Blueprint $table) {
             $table->id();
             $table->string('plate_number')->unique();
             $table->string('model');
-            $table->string('capacity');
-            $table->enum('status', ['active', 'maintenance', 'inactive'])->default('active');
+            $table->enum('status', ['active', 'inactive', 'maintenance'])->default('active');
             $table->timestamps();
         });
     }
